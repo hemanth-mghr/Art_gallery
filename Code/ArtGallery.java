@@ -14,32 +14,31 @@ import java.util.UUID;
 
 public class ArtGallery extends JFrame {
 
-    // Database Credentials - Update these to your local MySQL credentials
+    // Database Credentials
     private static final String DB_URL_BASE = "jdbc:mysql://localhost:3306/";
     private static final String DB_NAME = "art_gallery_db";
     private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "1122"; // Change to your password
+    private static final String DB_PASSWORD = "1122"; 
 
-    // Strict UI Color Palette
-    private static final Color BG_BLACK = new Color(18, 18, 18);
-    private static final Color BG_GREY = new Color(32, 32, 32);
-    private static final Color PANEL_GREY = new Color(45, 45, 45);
-    private static final Color TEXT_WHITE = new Color(240, 240, 240);
-    private static final Color TEXT_MUTED = new Color(160, 160, 160);
-    private static final Color BORDER_GREY = new Color(65, 65, 65);
+    // Light Theme Color Palette with Premium Soft Tones
+    private static final Color BG_WHITE = new Color(252, 252, 252);
+    private static final Color PATTERN_GREY = new Color(242, 242, 244);
+    private static final Color BOX_GREY = new Color(245, 245, 247); 
+    private static final Color PANEL_WHITE = new Color(255, 255, 255);
+    private static final Color TEXT_DARK = new Color(33, 37, 41);
+    private static final Color TEXT_MUTED = new Color(108, 117, 125);
+    private static final Color BORDER_LIGHT = new Color(222, 226, 230);
     
-    private static final Color BTN_GREEN = new Color(46, 204, 113);
-    private static final Color BTN_BLUE = new Color(52, 152, 219);
-    private static final Color BTN_ORANGE = new Color(230, 126, 34);
-    private static final Color BTN_RED = new Color(231, 76, 60);
+    private static final Color BTN_GREEN = new Color(40, 167, 69);
+    private static final Color BTN_PINK = new Color(255, 105, 180);
+    private static final Color BTN_BLUE = new Color(0, 123, 255);
 
     // Layout and Navigation
     private CardLayout cardLayout;
     private JPanel mainCardPanel;
     private JPanel homeGridPanel;
-    private JPanel searchGridPanel;
     
-    // File Storage
+    private RoundedTextField txtNavbarSearch;
     private String storageFolderPath;
 
     public ArtGallery() {
@@ -75,7 +74,7 @@ public class ArtGallery extends JFrame {
             stmtTable.close();
             connDB.close();
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Database Connection Error. Please check credentials.\n" + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Database Connection Error.\n" + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
     }
@@ -85,129 +84,205 @@ public class ArtGallery extends JFrame {
     }
 
     private void setupMainFrame() {
-        setTitle("Art Gallery");
+        setTitle("Art Gallery Application");
         setExtendedState(JFrame.MAXIMIZED_BOTH); 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-        getContentPane().setBackground(BG_BLACK);
+        getContentPane().setBackground(BG_WHITE);
 
-        // Modern Top Navigation Bar
-        JPanel navBar = new JPanel(new FlowLayout(FlowLayout.CENTER, 25, 15));
-        navBar.setBackground(BG_GREY);
-        navBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_GREY));
+        // Fixed Header Architecture
+        JPanel fixedHeaderPanel = new JPanel();
+        fixedHeaderPanel.setLayout(new BoxLayout(fixedHeaderPanel, BoxLayout.Y_AXIS));
+        fixedHeaderPanel.setBackground(BG_WHITE);
 
-        RoundedButton btnHome = new RoundedButton("Home", BTN_RED, 12);
-        RoundedButton btnAddArt = new RoundedButton("Add art", BTN_GREEN, 12);
-        RoundedButton btnSearchArt = new RoundedButton("Search art", BTN_BLUE, 12);
-        RoundedButton btnFavArt = new RoundedButton("Favourite art", BTN_ORANGE, 12);
+        // Persistent "Art Gallery" Branding Title
+        JLabel lblMainTitle = new JLabel("Art Gallery");
+        lblMainTitle.setFont(new Font("Georgia", Font.BOLD | Font.ITALIC, 42));
+        lblMainTitle.setForeground(TEXT_DARK);
+        lblMainTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblMainTitle.setBorder(new EmptyBorder(20, 0, 10, 0));
+        fixedHeaderPanel.add(lblMainTitle);
 
-        btnHome.addActionListener(e -> showHomeView());
+        // Modern Restructured Navigation Bar
+        JPanel navBar = new JPanel(new BorderLayout(20, 0));
+        navBar.setBackground(PANEL_WHITE);
+        navBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 1, 0, BORDER_LIGHT),
+                new EmptyBorder(12, 40, 12, 40)
+        ));
+
+        // Right Segment: Search grouped with Context Action Buttons
+        JPanel actionSection = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        actionSection.setOpaque(false);
+        
+        txtNavbarSearch = new RoundedTextField(20, 12);
+        txtNavbarSearch.setToolTipText("Search art titles...");
+        RoundedButton btnSearch = new RoundedButton("Search", BTN_BLUE, 12);
+        RoundedButton btnAddArt = new RoundedButton("Add Art", BTN_GREEN, 12);
+        RoundedButton btnFavArt = new RoundedButton("Favorites", BTN_PINK, 12);
+
+        actionSection.add(txtNavbarSearch);
+        actionSection.add(btnSearch);
+        actionSection.add(btnAddArt);
+        actionSection.add(btnFavArt);
+
+        // Add completely to the right side of the nav
+        navBar.add(actionSection, BorderLayout.EAST);
+        fixedHeaderPanel.add(navBar);
+
+        add(fixedHeaderPanel, BorderLayout.NORTH);
+
+        // Functional Action Hooks
+        btnSearch.addActionListener(e -> executeSearchQuery());
+        txtNavbarSearch.addActionListener(e -> executeSearchQuery());
         btnAddArt.addActionListener(e -> showAddArtView());
-        btnSearchArt.addActionListener(e -> showSearchView());
-        btnFavArt.addActionListener(e -> loadGridData(homeGridPanel, null, true));
+        btnFavArt.addActionListener(e -> showFavoritesView());
 
-        navBar.add(btnHome);
-        navBar.add(btnAddArt);
-        navBar.add(btnSearchArt);
-        navBar.add(btnFavArt);
-
-        add(navBar, BorderLayout.NORTH);
-
-        // Main Content Switcher Container
+        // Card Engine Content Frame
         cardLayout = new CardLayout();
         mainCardPanel = new JPanel(cardLayout);
-        mainCardPanel.setBackground(BG_BLACK);
+        mainCardPanel.setOpaque(false);
 
-        // View 1: Home View (Dynamic Image Gallery Grid)
-        homeGridPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 25, 25));
-        homeGridPanel.setBackground(BG_BLACK);
-        JScrollPane homeScrollPane = createModernScrollPane(homeGridPanel);
+        // Home View Setup 
+        homeGridPanel = new ResponsiveGridPanel(5, 30, 35);
+        homeGridPanel.setBorder(new EmptyBorder(30, 45, 30, 45));
+        homeGridPanel.setOpaque(false);
         
+        PatternScrollPane homeScrollPane = new PatternScrollPane(homeGridPanel);
         mainCardPanel.add(homeScrollPane, "HomeView");
+        
         add(mainCardPanel, BorderLayout.CENTER);
     }
 
-    private JScrollPane createModernScrollPane(JPanel panel) {
-        JScrollPane scrollPane = new JScrollPane(panel);
-        scrollPane.setBorder(null);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(18);
-        scrollPane.setBackground(BG_BLACK);
-        scrollPane.getViewport().setBackground(BG_BLACK);
-        return scrollPane;
-    }
-
     private void showHomeView() {
+        txtNavbarSearch.setText("");
         loadGridData(homeGridPanel, null, false);
         cardLayout.show(mainCardPanel, "HomeView");
     }
 
-    private void showSearchView() {
-        JPanel searchMainPanel = new JPanel(new BorderLayout(20, 20));
-        searchMainPanel.setBackground(BG_BLACK);
-        searchMainPanel.setBorder(new EmptyBorder(30, 40, 30, 40));
+    private void executeSearchQuery() {
+        String query = txtNavbarSearch.getText().trim();
+        if (!query.isEmpty()) {
+            showSearchResultsView(query);
+        } else {
+            showHomeView();
+        }
+    }
 
-        // Form Bar Header
-        JPanel searchBarPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
-        searchBarPanel.setBackground(BG_BLACK);
+    // Dedicated Search Results View with right-aligned Back button
+    private void showSearchResultsView(String query) {
+        JPanel searchContainer = new JPanel(new BorderLayout());
+        searchContainer.setOpaque(false);
 
-        JLabel lblSearch = new JLabel("Search by Title:");
-        lblSearch.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblSearch.setForeground(TEXT_WHITE);
+        // Header Panel using BorderLayout to separate Title (Left) and Button (Right)
+        JPanel headerPanel = new JPanel(new BorderLayout(15, 0));
+        headerPanel.setOpaque(false);
+        headerPanel.setBorder(new EmptyBorder(15, 45, 0, 45));
 
-        RoundedTextField txtSearch = new RoundedTextField(25, 12);
-        RoundedButton btnFind = new RoundedButton("Search", BTN_BLUE, 12);
+        RoundedButton btnBack = new RoundedButton("Back →", TEXT_DARK, 12);
+        btnBack.addActionListener(e -> showHomeView());
+        
+        JLabel lblTitle = new JLabel("Search Results for: \"" + query + "\"");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitle.setForeground(TEXT_DARK);
 
-        searchBarPanel.add(lblSearch);
-        searchBarPanel.add(txtSearch);
-        searchBarPanel.add(btnFind);
+        headerPanel.add(lblTitle, BorderLayout.WEST); // Title on Left
+        headerPanel.add(btnBack, BorderLayout.EAST);  // Button on Right
 
-        searchMainPanel.add(searchBarPanel, BorderLayout.NORTH);
+        searchContainer.add(headerPanel, BorderLayout.NORTH);
 
-        // Results Grid Layout
-        searchGridPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 25, 25));
-        searchGridPanel.setBackground(BG_BLACK);
-        JScrollPane searchResultScroll = createModernScrollPane(searchGridPanel);
+        JPanel searchGrid = new ResponsiveGridPanel(5, 30, 35);
+        searchGrid.setBorder(new EmptyBorder(20, 45, 30, 45));
+        searchGrid.setOpaque(false);
+        
+        loadGridData(searchGrid, query, false);
+        
+        PatternScrollPane scrollPane = new PatternScrollPane(searchGrid);
+        searchContainer.add(scrollPane, BorderLayout.CENTER);
 
-        searchMainPanel.add(searchResultScroll, BorderLayout.CENTER);
-
-        // Trigger dynamic query loading
-        btnFind.addActionListener(e -> {
-            String query = txtSearch.getText().trim();
-            if (!query.isEmpty()) {
-                loadGridData(searchGridPanel, query, false);
-            }
-        });
-
-        // Search operational on pressing enter key inside field
-        txtSearch.addActionListener(e -> btnFind.doClick());
-
-        mainCardPanel.add(searchMainPanel, "SearchView");
+        mainCardPanel.add(searchContainer, "SearchView");
         cardLayout.show(mainCardPanel, "SearchView");
     }
 
+    // Favorites View with right-aligned Back button
+    private void showFavoritesView() {
+        JPanel favContainer = new JPanel(new BorderLayout());
+        favContainer.setOpaque(false);
+
+        // Header Panel using BorderLayout to separate Title (Left) and Button (Right)
+        JPanel headerPanel = new JPanel(new BorderLayout(15, 0));
+        headerPanel.setOpaque(false);
+        headerPanel.setBorder(new EmptyBorder(15, 45, 0, 45));
+
+        RoundedButton btnBack = new RoundedButton("Back →", TEXT_DARK, 12);
+        btnBack.addActionListener(e -> showHomeView());
+        
+        JLabel lblTitle = new JLabel("Your Favorite Pieces");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitle.setForeground(TEXT_DARK);
+
+        headerPanel.add(lblTitle, BorderLayout.WEST); // Title on Left
+        headerPanel.add(btnBack, BorderLayout.EAST);  // Button on Right
+
+        favContainer.add(headerPanel, BorderLayout.NORTH);
+
+        JPanel favGrid = new ResponsiveGridPanel(5, 30, 35);
+        favGrid.setBorder(new EmptyBorder(20, 45, 30, 45));
+        favGrid.setOpaque(false);
+        
+        loadGridData(favGrid, null, true);
+        
+        PatternScrollPane scrollPane = new PatternScrollPane(favGrid);
+        favContainer.add(scrollPane, BorderLayout.CENTER);
+
+        mainCardPanel.add(favContainer, "FavoritesView");
+        cardLayout.show(mainCardPanel, "FavoritesView");
+    }
+
+    // Add Art View with right-aligned Back button
     private void showAddArtView() {
-        JPanel addContainerPanel = new JPanel(new GridBagLayout());
-        addContainerPanel.setBackground(BG_BLACK);
+        JPanel outerPanel = new JPanel(new BorderLayout());
+        outerPanel.setOpaque(false);
+
+        // Header Panel using BorderLayout to separate Title (Left) and Button (Right)
+        JPanel headerPanel = new JPanel(new BorderLayout(15, 0));
+        headerPanel.setOpaque(false);
+        headerPanel.setBorder(new EmptyBorder(20, 45, 0, 45));
+
+        RoundedButton btnBack = new RoundedButton("Back →", TEXT_DARK, 12);
+        btnBack.addActionListener(e -> showHomeView());
+
+        JLabel lblViewTitle = new JLabel("Publish New Masterpiece");
+        lblViewTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblViewTitle.setForeground(TEXT_DARK);
+
+        headerPanel.add(lblViewTitle, BorderLayout.WEST); // Title on Left
+        headerPanel.add(btnBack, BorderLayout.EAST);      // Button on Right
+        
+        outerPanel.add(headerPanel, BorderLayout.NORTH);
+
+        JPanel formCard = new RoundedPanel(20, PANEL_WHITE);
+        formCard.setLayout(new GridBagLayout());
+        formCard.setBorder(BorderFactory.createLineBorder(BORDER_LIGHT, 1, true));
+        
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(12, 12, 12, 12);
+        gbc.insets = new Insets(15, 20, 15, 20);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Custom Clickable Rounded Upload Box
-        RoundedPanel imgUploadBox = new RoundedPanel(20, PANEL_GREY);
+        RoundedPanel imgUploadBox = new RoundedPanel(16, BOX_GREY);
         imgUploadBox.setLayout(new BorderLayout());
-        imgUploadBox.setPreferredSize(new Dimension(320, 320));
+        imgUploadBox.setPreferredSize(new Dimension(340, 240));
         imgUploadBox.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        imgUploadBox.setBorder(BorderFactory.createLineBorder(BORDER_GREY, 1, true));
+        imgUploadBox.setBorder(BorderFactory.createLineBorder(BORDER_LIGHT, 1, true));
 
-        JLabel lblPreview = new JLabel("Click here to select image from storage", SwingConstants.CENTER);
+        JLabel lblPreview = new JLabel("Click to select artwork image", SwingConstants.CENTER);
         lblPreview.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         lblPreview.setForeground(TEXT_MUTED);
         imgUploadBox.add(lblPreview, BorderLayout.CENTER);
 
-        RoundedTextField txtTitle = new RoundedTextField(22, 12);
-        RoundedTextArea txtDesc = new RoundedTextArea(5, 22, 12);
+        RoundedTextField txtTitle = new RoundedTextField(25, 12);
+        RoundedTextArea txtDesc = new RoundedTextArea(4, 25, 12);
         
-        // Wrap custom text area in customized layout container
         JScrollPane descScroll = new JScrollPane(txtDesc);
         descScroll.setBorder(null);
         descScroll.setOpaque(false);
@@ -217,43 +292,47 @@ public class ArtGallery extends JFrame {
 
         final File[] selectedFile = {null};
 
-        // Click-to-upload action handler directly mapping to target block
         imgUploadBox.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 JFileChooser chooser = new JFileChooser();
-                chooser.setFileFilter(new FileNameExtensionFilter("Images", "jpg", "png", "jpeg"));
+                chooser.setFileFilter(new FileNameExtensionFilter("Images (JPG, PNG)", "jpg", "png", "jpeg"));
                 if (chooser.showOpenDialog(ArtGallery.this) == JFileChooser.APPROVE_OPTION) {
                     selectedFile[0] = chooser.getSelectedFile();
                     lblPreview.setText("");
-                    lblPreview.setIcon(scaleImage(selectedFile[0].getAbsolutePath(), 300, 300));
+                    lblPreview.setIcon(scaleImageKeepAspect(selectedFile[0].getAbsolutePath(), 320, 220, true));
                 }
             }
         });
 
         btnSave.addActionListener(e -> {
             if (selectedFile[0] == null || txtTitle.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please click the image box to upload and provide a title.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Please select an image and enter an artwork title.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             saveArt(selectedFile[0], txtTitle.getText().trim(), txtDesc.getText().trim());
         });
 
-        // Grid Positioning Structure setup
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; gbc.fill = GridBagConstraints.NONE;
-        addContainerPanel.add(imgUploadBox, gbc);
+        formCard.add(imgUploadBox, gbc);
         
         gbc.fill = GridBagConstraints.HORIZONTAL; gbc.gridwidth = 1;
-        gbc.gridx = 0; gbc.gridy = 1; addContainerPanel.add(new JLabel("Title:") {{ setForeground(TEXT_WHITE); setFont(new Font("Segoe UI", Font.BOLD, 14)); }}, gbc);
-        gbc.gridx = 1; addContainerPanel.add(txtTitle, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; formCard.add(new JLabel("Title") {{ setForeground(TEXT_DARK); setFont(new Font("Segoe UI", Font.BOLD, 14)); }}, gbc);
+        gbc.gridx = 1; formCard.add(txtTitle, gbc);
         
-        gbc.gridx = 0; gbc.gridy = 2; addContainerPanel.add(new JLabel("Description:") {{ setForeground(TEXT_WHITE); setFont(new Font("Segoe UI", Font.BOLD, 14)); }}, gbc);
-        gbc.gridx = 1; addContainerPanel.add(descScroll, gbc);
+        gbc.gridx = 0; gbc.gridy = 2; formCard.add(new JLabel("Description") {{ setForeground(TEXT_DARK); setFont(new Font("Segoe UI", Font.BOLD, 14)); }}, gbc);
+        gbc.gridx = 1; formCard.add(descScroll, gbc);
         
-        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2; gbc.insets = new Insets(25, 12, 12, 12);
-        addContainerPanel.add(btnSave, gbc);
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2; gbc.insets = new Insets(30, 20, 15, 20);
+        formCard.add(btnSave, gbc);
 
-        mainCardPanel.add(addContainerPanel, "AddView");
+        JPanel centerWrapper = new JPanel(new GridBagLayout());
+        centerWrapper.setOpaque(false);
+        centerWrapper.add(formCard);
+        
+        outerPanel.add(centerWrapper, BorderLayout.CENTER);
+
+        mainCardPanel.add(outerPanel, "AddView");
         cardLayout.show(mainCardPanel, "AddView");
     }
 
@@ -284,7 +363,7 @@ public class ArtGallery extends JFrame {
                 String path = rs.getString("file_path");
                 boolean isFav = rs.getBoolean("is_favorite");
 
-                targetPanel.add(createModernThumbnail(id, title, desc, path, isFav));
+                targetPanel.add(createAspectCorrectThumbnail(id, title, desc, path, isFav));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -294,25 +373,31 @@ public class ArtGallery extends JFrame {
         targetPanel.repaint();
     }
 
-    private JPanel createModernThumbnail(int id, String title, String desc, String path, boolean isFav) {
-        RoundedPanel thumbContainer = new RoundedPanel(16, PANEL_GREY);
+    private JPanel createAspectCorrectThumbnail(int id, String title, String desc, String path, boolean isFav) {
+        RoundedPanel thumbContainer = new RoundedPanel(16, BOX_GREY);
         thumbContainer.setLayout(new BorderLayout());
-        thumbContainer.setPreferredSize(new Dimension(220, 270));
         thumbContainer.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        thumbContainer.setBorder(BorderFactory.createLineBorder(BORDER_GREY, 1, true));
+        thumbContainer.setBorder(BorderFactory.createLineBorder(BORDER_LIGHT, 1, true));
 
+        JPanel imageCanvas = new JPanel(new GridBagLayout());
+        imageCanvas.setOpaque(false);
+        
         JLabel imgLabel = new JLabel();
-        imgLabel.setHorizontalAlignment(JLabel.CENTER);
-        imgLabel.setBorder(new EmptyBorder(10, 10, 5, 10));
-        ImageIcon icon = scaleImage(path, 190, 190);
-        if (icon != null) imgLabel.setIcon(icon);
+        ImageIcon dynamicIcon = scaleImageKeepAspect(path, 210, 250, true);
+        if (dynamicIcon != null) {
+            imgLabel.setIcon(dynamicIcon);
+        } else {
+            imgLabel.setText("Image Missing");
+            imgLabel.setForeground(TEXT_MUTED);
+        }
+        imageCanvas.add(imgLabel);
 
         JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
-        titleLabel.setForeground(TEXT_WHITE);
+        titleLabel.setForeground(TEXT_DARK);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        titleLabel.setBorder(new EmptyBorder(5, 10, 12, 10));
+        titleLabel.setBorder(new EmptyBorder(5, 8, 15, 8));
 
-        thumbContainer.add(imgLabel, BorderLayout.CENTER);
+        thumbContainer.add(imageCanvas, BorderLayout.CENTER);
         thumbContainer.add(titleLabel, BorderLayout.SOUTH);
 
         thumbContainer.addMouseListener(new MouseAdapter() {
@@ -322,7 +407,10 @@ public class ArtGallery extends JFrame {
             }
         });
 
-        return thumbContainer;
+        JPanel cellWrapper = new JPanel(new BorderLayout());
+        cellWrapper.setOpaque(false);
+        cellWrapper.add(thumbContainer, BorderLayout.CENTER); 
+        return cellWrapper;
     }
 
     private void saveArt(File sourceFile, String title, String desc) {
@@ -341,61 +429,79 @@ public class ArtGallery extends JFrame {
                 pstmt.executeUpdate();
             }
 
-            JOptionPane.showMessageDialog(this, "Art added successfully!");
+            JOptionPane.showMessageDialog(this, "Success! Artpiece registered.");
             showHomeView();
 
         } catch (IOException | SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error saving art: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "IO Handling Exception: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void showDetailView(int id, String title, String desc, String path, boolean isFav) {
-        JPanel detailPanel = new JPanel(new BorderLayout(25, 25));
-        detailPanel.setBackground(BG_BLACK);
-        detailPanel.setBorder(new EmptyBorder(30, 40, 30, 40));
+        JPanel detailPanel = new JPanel(new BorderLayout(30, 30));
+        detailPanel.setOpaque(false);
+        detailPanel.setBorder(new EmptyBorder(30, 45, 30, 45));
 
-        // Center Pane Image Presenter
+        JPanel detailHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        detailHeader.setOpaque(false);
+        RoundedButton btnBack = new RoundedButton("← Back", TEXT_DARK, 12);
+        btnBack.addActionListener(e -> showHomeView());
+        detailHeader.add(btnBack);
+        detailPanel.add(detailHeader, BorderLayout.NORTH);
+
         JLabel imgLabel = new JLabel();
         imgLabel.setHorizontalAlignment(JLabel.CENTER);
-        int screenHeight = Toolkit.getDefaultToolkit().getScreenSize().height - 260;
-        ImageIcon fullIcon = scaleImageKeepAspect(path, Toolkit.getDefaultToolkit().getScreenSize().width - 100, screenHeight);
+        
+        // Calculated a significantly tighter bounding box factoring in header/footer heights to stop layout clipping
+        int targetScreenWidth = Toolkit.getDefaultToolkit().getScreenSize().width - 250;
+        int targetScreenHeight = Toolkit.getDefaultToolkit().getScreenSize().height - 500; 
+        
+        // Passing 'false' prevents small images from upscaling and ruining the original ratio
+        ImageIcon fullIcon = scaleImageKeepAspect(path, targetScreenWidth, targetScreenHeight, false);
         if (fullIcon != null) imgLabel.setIcon(fullIcon);
+        detailPanel.add(imgLabel, BorderLayout.CENTER);
 
-        // Bottom Dashboard Panel Block
-        JPanel bottomPanel = new JPanel(new BorderLayout(15, 15));
-        bottomPanel.setBackground(BG_BLACK);
+        JPanel detailsDashboard = new JPanel(new BorderLayout(15, 15));
+        detailsDashboard.setOpaque(false);
 
-        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 5, 5));
-        infoPanel.setBackground(BG_BLACK);
+        JPanel textMetaGroup = new JPanel(new GridLayout(2, 1, 6, 6));
+        textMetaGroup.setOpaque(false);
         
         JLabel lblTitle = new JLabel(title, SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 26));
-        lblTitle.setForeground(TEXT_WHITE);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        lblTitle.setForeground(TEXT_DARK);
         
-        JLabel lblDesc = new JLabel("<html><center>" + desc + "</center></html>", SwingConstants.CENTER);
-        lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        JLabel lblDesc = new JLabel("<html><center>" + (desc.isEmpty() ? "No description provided." : desc) + "</center></html>", SwingConstants.CENTER);
+        lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 15));
         lblDesc.setForeground(TEXT_MUTED);
         
-        infoPanel.add(lblTitle);
-        infoPanel.add(lblDesc);
+        textMetaGroup.add(lblTitle);
+        textMetaGroup.add(lblDesc);
 
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 25, 10));
-        actionPanel.setBackground(BG_BLACK);
+        JPanel controlActionsGroup = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 10));
+        controlActionsGroup.setOpaque(false);
         
-        RoundedButton btnFav = new RoundedButton(isFav ? "Unfavourite" : "Favourite", BTN_ORANGE, 12);
-        RoundedButton btnDelete = new RoundedButton("Delete", BTN_RED, 12);
+        String heartSymbol = isFav ? "♥" : "♡";
+        RoundedButton btnHeartFav = new RoundedButton(heartSymbol + " Favorite", BTN_PINK, 12);
+        btnHeartFav.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        
+        RoundedButton btnDelete = new RoundedButton("Delete Artwork", new Color(220, 53, 69), 12);
 
-        btnFav.addActionListener(e -> toggleFavorite(id, !isFav));
+        btnHeartFav.addActionListener(e -> {
+            boolean nextFavState = !isFav;
+            toggleFavorite(id, nextFavState);
+            showDetailView(id, title, desc, path, nextFavState);
+        });
+        
         btnDelete.addActionListener(e -> deleteArt(id, path));
 
-        actionPanel.add(btnFav);
-        actionPanel.add(btnDelete);
+        controlActionsGroup.add(btnHeartFav);
+        controlActionsGroup.add(btnDelete);
 
-        bottomPanel.add(infoPanel, BorderLayout.CENTER);
-        bottomPanel.add(actionPanel, BorderLayout.SOUTH);
+        detailsDashboard.add(textMetaGroup, BorderLayout.CENTER);
+        detailsDashboard.add(controlActionsGroup, BorderLayout.SOUTH);
 
-        detailPanel.add(imgLabel, BorderLayout.CENTER);
-        detailPanel.add(bottomPanel, BorderLayout.SOUTH);
+        detailPanel.add(detailsDashboard, BorderLayout.SOUTH);
 
         mainCardPanel.add(detailPanel, "DetailView");
         cardLayout.show(mainCardPanel, "DetailView");
@@ -407,14 +513,13 @@ public class ArtGallery extends JFrame {
             pstmt.setBoolean(1, makeFav);
             pstmt.setInt(2, id);
             pstmt.executeUpdate();
-            showHomeView(); 
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
     private void deleteArt(int id, String path) {
-        int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this art?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+        int confirm = JOptionPane.showConfirmDialog(this, "Permanently wipe this artwork out from registry?", "Confirm Destruction", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             try {
                 try (Connection conn = getConnection();
@@ -433,34 +538,30 @@ public class ArtGallery extends JFrame {
         }
     }
 
-    private ImageIcon scaleImage(String path, int width, int height) {
+    // Upgraded method to support conditionally preventing upscaling
+    private ImageIcon scaleImageKeepAspect(String path, int maxWidth, int maxHeight, boolean allowScaleUp) {
         try {
             ImageIcon icon = new ImageIcon(path);
             Image img = icon.getImage();
-            Image newImg = img.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-            return new ImageIcon(newImg);
-        } catch (Exception e) {
-            return null;
-        }
-    }
+            
+            int originalWidth = icon.getIconWidth();
+            int originalHeight = icon.getIconHeight();
 
-    private ImageIcon scaleImageKeepAspect(String path, int maxWidth, int maxHeight) {
-        try {
-            ImageIcon icon = new ImageIcon(path);
-            Image img = icon.getImage();
-            int width = icon.getIconWidth();
-            int height = icon.getIconHeight();
+            if (originalWidth <= 0 || originalHeight <= 0) return icon;
 
-            double widthRatio = (double) maxWidth / width;
-            double heightRatio = (double) maxHeight / height;
+            double widthRatio = (double) maxWidth / originalWidth;
+            double heightRatio = (double) maxHeight / originalHeight;
             double ratio = Math.min(widthRatio, heightRatio);
 
-            if (ratio < 1.0) {
-                width = (int) (width * ratio);
-                height = (int) (height * ratio);
+            // If the image is smaller than our max bounds, stop it from stretching
+            if (!allowScaleUp && ratio > 1.0) {
+                ratio = 1.0;
             }
 
-            Image newImg = img.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+            int newWidth = (int) (originalWidth * ratio);
+            int newHeight = (int) (originalHeight * ratio);
+
+            Image newImg = img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
             return new ImageIcon(newImg);
         } catch (Exception e) {
             return null;
@@ -468,14 +569,66 @@ public class ArtGallery extends JFrame {
     }
 
     public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {}
+        
         SwingUtilities.invokeLater(() -> {
             new ArtGallery().setVisible(true);
         });
     }
 
     // =========================================================================
-    // CUSTOM MODERN ANTI-ALIASED UI COMPONENTS
+    // PREMIUM RESTRUCTURED LIGHT UI RENDER LAYER COMPONENTS
     // =========================================================================
+
+    class ResponsiveGridPanel extends JPanel implements Scrollable {
+        public ResponsiveGridPanel(int columns, int hgap, int vgap) {
+            super(new GridLayout(0, columns, hgap, vgap));
+            setOpaque(false);
+        }
+        @Override
+        public Dimension getPreferredScrollableViewportSize() { return getPreferredSize(); }
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) { return 22; }
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) { return 22; }
+        @Override
+        public boolean getScrollableTracksViewportWidth() { return true; } 
+        @Override
+        public boolean getScrollableTracksViewportHeight() { return false; }
+    }
+
+    class PatternScrollPane extends JScrollPane {
+        public PatternScrollPane(Component view) {
+            super(view);
+            setBorder(null);
+            getVerticalScrollBar().setUnitIncrement(22);
+            setOpaque(false);
+            getViewport().setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            
+            g2d.setColor(BG_WHITE);
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+
+            g2d.setColor(PATTERN_GREY);
+            int spatialGridSize = 40; 
+            for (int x = 0; x < getWidth(); x += spatialGridSize) {
+                g2d.drawLine(x, 0, x, getHeight());
+            }
+            for (int y = 0; y < getHeight(); y += spatialGridSize) {
+                g2d.drawLine(0, y, getWidth(), y);
+            }
+            
+            g2d.dispose();
+            super.paintComponent(g);
+        }
+    }
 
     class RoundedPanel extends JPanel {
         private int cornerRadius;
@@ -501,11 +654,17 @@ public class ArtGallery extends JFrame {
             super(text);
             this.cornerRadius = radius;
             setBackground(bgColor);
-            setForeground(Color.WHITE);
+            
+            if (bgColor.equals(PANEL_WHITE) || bgColor.equals(BG_WHITE)) {
+                setForeground(TEXT_DARK);
+            } else {
+                setForeground(Color.WHITE); 
+            }
+            
             setFocusPainted(false);
             setContentAreaFilled(false);
             setBorder(BorderFactory.createEmptyBorder(10, 24, 10, 24));
-            setFont(new Font("Segoe UI", Font.BOLD, 14));
+            setFont(new Font("Segoe UI", Font.BOLD, 13));
             setCursor(new Cursor(Cursor.HAND_CURSOR));
         }
         @Override
@@ -525,10 +684,10 @@ public class ArtGallery extends JFrame {
             super(columns);
             this.cornerRadius = radius;
             setOpaque(false);
-            setBackground(PANEL_GREY);
-            setForeground(TEXT_WHITE);
-            setCaretColor(TEXT_WHITE);
-            setFont(new Font("Segoe UI", Font.PLAIN, 15));
+            setBackground(PANEL_WHITE);
+            setForeground(TEXT_DARK);
+            setCaretColor(TEXT_DARK);
+            setFont(new Font("Segoe UI", Font.PLAIN, 14));
             setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
         }
         @Override
@@ -544,7 +703,7 @@ public class ArtGallery extends JFrame {
         protected void paintBorder(Graphics g) {
             Graphics2D graphics = (Graphics2D) g.create();
             graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            graphics.setColor(BORDER_GREY);
+            graphics.setColor(BORDER_LIGHT);
             graphics.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, cornerRadius, cornerRadius);
             graphics.dispose();
         }
@@ -556,12 +715,12 @@ public class ArtGallery extends JFrame {
             super(rows, columns);
             this.cornerRadius = radius;
             setOpaque(false);
-            setBackground(PANEL_GREY);
-            setForeground(TEXT_WHITE);
-            setCaretColor(TEXT_WHITE);
+            setBackground(PANEL_WHITE);
+            setForeground(TEXT_DARK);
+            setCaretColor(TEXT_DARK);
             setLineWrap(true);
             setWrapStyleWord(true);
-            setFont(new Font("Segoe UI", Font.PLAIN, 15));
+            setFont(new Font("Segoe UI", Font.PLAIN, 14));
             setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
         }
         @Override
@@ -577,7 +736,7 @@ public class ArtGallery extends JFrame {
         protected void paintBorder(Graphics g) {
             Graphics2D graphics = (Graphics2D) g.create();
             graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            graphics.setColor(BORDER_GREY);
+            graphics.setColor(BORDER_LIGHT);
             graphics.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, cornerRadius, cornerRadius);
             graphics.dispose();
         }
